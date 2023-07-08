@@ -1,5 +1,5 @@
 #include <SoftwareSerial.h>
-
+#include <LiquidCrystal.h>
 // L298 motor driver pins
 const int enA = 9;
 const int in1 = 8;
@@ -8,9 +8,10 @@ const int enB = 10;
 const int in3 = 6;
 const int in4 = 5;
 
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);  // RS, E, D4, D5, D6, D7 pins
 
 
-SoftwareSerial bluetoothSerial(2, 3); // RX, TX pins for Bluetooth module
+SoftwareSerial bluetoothSerial(0, 1); // RX, TX pins for Bluetooth module
 const int buttonPin = 4;  // Choose a suitable digital pin for the button
 
 // Bluetooth commands
@@ -57,6 +58,9 @@ void setup()
     pinMode(enB, OUTPUT);
     pinMode(in3, OUTPUT);
     pinMode(in4, OUTPUT);
+ 
+ lcd.begin(16, 2);  // Set the LCD dimensions (16 columns, 2 rows)
+    lcd.print("Mode: Bluetooth");  // Initial mode display
 }
 
 void loop()
@@ -75,7 +79,9 @@ void loop()
 
     // Other code for different modes
     if (mode == MODE_BLUETOOTH)
-    {
+    {     
+      lcd.setCursor(0, 1);  // Set the cursor position for mode display
+      lcd.print("Mode: Bluetooth   "); // Print the current mode
         // Bluetooth control mode code
         if (bluetoothSerial.available())
         {
@@ -85,11 +91,15 @@ void loop()
     }
     else if (mode == MODE_OBSTACLE)
     {
+        lcd.setCursor(0, 1);
+        lcd.print("Mode: Obstacle    ");
         avoidObstacles();
         // Obstacle avoidance mode code
     }
     else if (mode == MODE_MAZE)
     {
+        lcd.setCursor(0, 1);
+        lcd.print("Mode: Maze        ");
         followMaze();
         // Maze navigation mode code
     }
