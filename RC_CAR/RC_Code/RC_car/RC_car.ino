@@ -1,14 +1,12 @@
-//#include <SoftwareSerial.h>
 #include <LiquidCrystal.h>
+
 // L298 motor driver pins
-const int enA = 9;
 const int in1 = 8;
 const int in2 = 7;
-const int enB = 10;
 const int in3 = 6;
 const int in4 = 5;
 
-LiquidCrystal lcd(12, 11, A2, A3, A4, A5);  // RS, E, D4, D5, D6, D7 pins
+LiquidCrystal lcd(10, 9, A2, A3, A4, A5);  // RS, E, D4, D5, D6, D7 pins
 
 
 //SoftwareSerial bluetoothSerial(0, 1); // RX, TX pins for Bluetooth module
@@ -25,8 +23,8 @@ char mode = MODE_BLUETOOTH;
 const int trigPin = 2;  // Ultrasonic sensor trigger pin
 const int echoPin = 4; // Ultrasonic sensor echo pin
 
-const int L_S = A0;   // Analog pin for left IR sensor
-const int R_S = A1;  // Analog pin for right IR sensor
+const int L_S = A1;   // Analog pin for left IR sensor
+const int R_S = A0;  // Analog pin for right IR sensor
 
 
 // Bluetooth commands
@@ -46,18 +44,15 @@ char maze[mazeHeight][mazeWidth] = {
   {'#', '#', 'G', '#'}
 };
 
-// Bluetooth variables
-char command;
-
+char command[3];
+int i=0;
 void setup()
 {
   Serial.begin(9600);
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
-  pinMode(enA, OUTPUT);
   pinMode(in1, OUTPUT);
   pinMode(in2, OUTPUT);
-  pinMode(enB, OUTPUT);
   pinMode(in3, OUTPUT);
   pinMode(in4, OUTPUT);
   pinMode(buttonPin, INPUT_PULLUP);
@@ -68,32 +63,28 @@ void setup()
 
 void loop()
 {
-  /*if (digitalRead(buttonPin) == LOW)
-    {
-    // Button is pressed, change the mode
-    changeMode();
-    delay(200); // Add a small delay for button debounce
-    }*/
-
   // Other code for different modes
   if (mode == MODE_BLUETOOTH)
   {
     lcd.setCursor(0, 1);  // Set the cursor position for mode display
     lcd.print("Mode: Bluetooth   "); // Print the current mode
     // Bluetooth control mode code
-    //Serial.println("Blutooth");
     if (Serial.available())
     {
-      char command = Serial.read();
-      Serial.println("\nDone");
-      handleBluetoothCommand(command);
+       command[i]= Serial.read();
+       if(command[i] == '\n')
+       Serial.println("Hello");
+       Serial.println("Done");
+       i++;
+       if(i==3)
+          i=0;
+      handleBluetoothCommand(command[0]);
     }
   }
   else if (mode == MODE_OBSTACLE)
   {
     lcd.setCursor(0, 1);
     lcd.print("Mode: Obstacle    ");
-    //lcd.print("Obstacle");
     avoidObstacles();
     // Obstacle avoidance mode code
   }
@@ -101,7 +92,6 @@ void loop()
   {
     lcd.setCursor(0, 1);
     lcd.print("Mode: LineFollower    ");
-    //lcd.print("Obstacle");
     LineFollowerFunc();
     // Obstacle avoidance mode code
   }
@@ -109,7 +99,6 @@ void loop()
   {
     lcd.setCursor(0, 1);
     lcd.print("Mode: Maze        ");
-    Serial.println("Maze");
     followMaze();
     // Maze navigation mode code
   }
@@ -130,19 +119,19 @@ void setMode(char command) {
 
 void changeMode()
 {
-  Serial.println("ISR");
+  //Serial.println("ISR");
   if (mode == MODE_BLUETOOTH)
     mode = MODE_OBSTACLE;
   else if (mode == MODE_OBSTACLE)
     mode = MODE_LINEFOLLOWER;
   else if (mode == MODE_LINEFOLLOWER)
     mode = MODE_BLUETOOTH;
-  Serial.println(mode);
+  //Serial.println(mode);
 }
 
-void handleBluetoothCommand(char command)
+void handleBluetoothCommand(char Copy_command)
 {
-  switch (command)
+  switch (Copy_command)
   {
     case Forward:
       moveForward();
@@ -163,46 +152,48 @@ void handleBluetoothCommand(char command)
 }
 
 void moveForward() {
+  lcd.setCursor(0, 0);
+  lcd.print("Dir: Forward    ");
   digitalWrite(in1, HIGH);
   digitalWrite(in2, LOW);
-  analogWrite(enA, 255);
 
   digitalWrite(in3, HIGH);
   digitalWrite(in4, LOW);
-  analogWrite(enB, 255);
 }
 
 void moveBackward() {
+  lcd.setCursor(0, 0);
+  lcd.print("Dir: Backword   ");
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
-  analogWrite(enA, 255);
 
   digitalWrite(in3, LOW);
   digitalWrite(in4, HIGH);
-  analogWrite(enB, 255);
 }
 
 void turnLeft() {
+  lcd.setCursor(0, 0);
+  lcd.print("Dir: Left       ");
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
-  analogWrite(enA, 255);
 
   digitalWrite(in3, HIGH);
   digitalWrite(in4, LOW);
-  analogWrite(enB, 255);
 }
 
 void turnRight() {
+  lcd.setCursor(0, 0);
+  lcd.print("Dir: Right      ");
   digitalWrite(in1, HIGH);
   digitalWrite(in2, LOW);
-  analogWrite(enA, 255);
 
   digitalWrite(in3, LOW);
   digitalWrite(in4, HIGH);
-  analogWrite(enB, 255);
 }
 
 void stopMotors() {
+  lcd.setCursor(0, 0);
+  lcd.print("Dir: Stop       ");
   digitalWrite(in1, LOW);
   digitalWrite(in2, LOW);
   digitalWrite(in3, LOW);
@@ -216,9 +207,9 @@ void avoidObstacles()
   if (distance < 20)
   {
     stopMotors();
-    delay(500);
+    delay(100);
     turnRight();
-    delay(1000);
+    delay(100);
   }
   else
   {
@@ -316,7 +307,7 @@ void getCurrentPosition(int &row, int &col)
   // Read the values from the left and right IR sensors
   int leftReading = 0;
   int rightReading = 0;
-  
+
   // Determine the current position based on the sensor readings
   if (leftReading < 500 && rightReading > 500)
   {
