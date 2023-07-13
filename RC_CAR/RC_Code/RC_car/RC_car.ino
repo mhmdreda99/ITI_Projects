@@ -14,6 +14,8 @@
 /*                follow lines, and navigate the maze efficiently.                 
 /* Layer       : APP                                                       
 /***************************************************************************************/
+
+ 
 #include <LiquidCrystal.h>
 
 // ========================L298 motor driver pins===========================
@@ -74,7 +76,7 @@ int i=0;
  * 
  * This function is called once at the beginning of the program.
  */
- 
+
 void setup()
 {
   Serial.begin(9600);  ///< Initialize the serial communication at a baud rate of 9600.
@@ -155,7 +157,7 @@ void loop()
  * @note Make sure to define the different operating modes and initialize the mode variable appropriately before calling this function.
  *
  * @return void
- */s
+ */
 void setMode(char command) {
 
   switch (command) {
@@ -393,6 +395,9 @@ float getDistance()
 
   return distance;
 }
+/// @brief 
+/// @param newRow 
+/// @param newCol 
 void updatePosition(int newRow, int newCol)
 {
   int currentRow, currentCol;
