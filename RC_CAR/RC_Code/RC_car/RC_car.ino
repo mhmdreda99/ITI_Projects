@@ -42,8 +42,12 @@ const char MODE_MAZE = '4';
 
 char mode = MODE_BLUETOOTH;
 
-const int trigPin = 2;  // Ultrasonic sensor trigger pin
-const int echoPin = 4; // Ultrasonic sensor echo pin
+const int trigPinForward = 2;  // Ultrasonic sensor trigger pin
+const int echoPinForward = 4; // Ultrasonic sensor echo pin
+const int trigPinSide = 11;  // Ultrasonic sensor trigger pin (side)
+const int echoPinLeft = 12; // Ultrasonic sensor echo pin (left side)
+const int echoPinRight = 13; // Ultrasonic sensor echo pin (right side)
+
 
 const int L_S = A1;   // Analog pin for left IR sensor
 const int R_S = A0;  // Analog pin for right IR sensor
@@ -59,7 +63,13 @@ const char RIGHT = 'R';
 // Maze dimensions
 const int mazeWidth = 4;
 const int mazeHeight = 4;
-
+//=============================================================================
+/*
+'S' represents the starting point of the maze.
+'G' represents the goal or target point of the maze.
+'#' represents obstacles or walls in the maze.
+' ' represents empty spaces or paths in the maze.*/
+//=============================================================================
 char maze[mazeHeight][mazeWidth] = {
   {'S', '#', '#', '#'},
   {' ', ' ', '#', ' '},
@@ -80,8 +90,11 @@ int i=0;
 void setup()
 {
   Serial.begin(9600);  ///< Initialize the serial communication at a baud rate of 9600.
-  pinMode(trigPin, OUTPUT);  // Set the trigger pin as an output.
-  pinMode(echoPin, INPUT);   // Set the echo pin as an input.
+  pinMode(trigPinForward, OUTPUT);  // Set the trigger pin as an output.
+  pinMode(echoPinForward, INPUT);   // Set the echo pin as an input.
+  pinMode(trigPinSide, OUTPUT);   // Set the trigger pin for side sensors as an output.
+  pinMode(echoPinLeft, INPUT);    // Set the echo pin for left side sensor as an input.
+  pinMode(echoPinRight, INPUT);   // Set the echo pin for right side sensor as an input.
   pinMode(in1, OUTPUT);      // Set in1 pin as an output.
   pinMode(in2, OUTPUT);      // Set in2 pin as an output.
   pinMode(in3, OUTPUT);      // Set in3 pin as an output.
@@ -344,7 +357,7 @@ void stopMotors() {
 /**
  * @brief Avoid obstacles by measuring the distance using an ultrasonic sensor and taking appropriate actions.
  *
- * This function utilizes the `getDistance()` function to measure the distance to an obstacle using an ultrasonic sensor.
+ * This function utilizes the `getDistanceForward()` function to measure the distance to an obstacle using an ultrasonic sensor.
  * If the measured distance is less than 20 centimeters, it stops the motors, delays for 100 milliseconds, and then turns
  * the robot to the right for another 100 milliseconds before resuming forward movement.
  * If the measured distance is 20 centimeters or more, it continues moving forward.
@@ -355,7 +368,7 @@ void stopMotors() {
  */
 void avoidObstacles()
 {
-  float distance = getDistance();
+  float distance = getDistanceForward();
 
   if (distance < 20)
   {
@@ -381,7 +394,7 @@ void avoidObstacles()
  *
  * @return The distance to an object in centimeters.
  */
-float getDistance()
+float getDistanceForward()
 {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -390,14 +403,41 @@ float getDistance()
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
 
-  long duration = pulseIn(echoPin, HIGH);
+  long duration = pulseIn(echoPinForward, HIGH);
   float distance = duration * 0.034 / 2;
 
   return distance;
 }
-/// @brief 
-/// @param newRow 
-/// @param newCol 
+
+float getDistanceSide()
+{
+  digitalWrite(trigPinSide, LOW);
+  delayMicroseconds(2);
+
+  digitalWrite(trigPinSide, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPinSide, LOW);
+
+  long durationLeft = pulseIn(echoPinLeft, HIGH);
+  
+  digitalWrite(trigPinSide, LOW);
+  delayMicroseconds(2);
+
+  digitalWrite(trigPinSide, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPinSide, LOW);
+
+  long durationRight = pulseIn(echoPinRight, HIGH);
+  
+  // Calculate the average duration of both side sensors
+  long averageDuration = (durationLeft + durationRight) / 2;
+
+  float distance = averageDuration * 0.034 / 2;
+
+  return distance;
+}
+
+
 void updatePosition(int newRow, int newCol)
 {
   int currentRow, currentCol;
