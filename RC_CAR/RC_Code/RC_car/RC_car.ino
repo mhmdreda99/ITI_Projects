@@ -68,7 +68,15 @@ const int mazeHeight = 4;
 'S' represents the starting point of the maze.
 'G' represents the goal or target point of the maze.
 '#' represents obstacles or walls in the maze.
-' ' represents empty spaces or paths in the maze.*/
+' ' represents empty spaces or paths in the maze.
+Here's how the maze looks visually:
+S###       S: Starting point
+  ##       G: Goal point
+#  #       #: Obstacle/Wall
+## #
+###G
+*/
+
 //=============================================================================
 char maze[mazeHeight][mazeWidth] = {
   {'S', '#', '#', '#'},
@@ -104,6 +112,7 @@ void setup()
   lcd.begin(16, 2);   // Initialize the LCD display with 16 columns and 2 rows.
   lcd.print("Welcome");   //Initial mode display: Display the "Welcome" message on the LCD.
 }
+
 
 /**
  * @brief The main loop function that runs continuously.
@@ -211,7 +220,8 @@ void changeMode()
   else if (mode == MODE_OBSTACLE)
     mode = MODE_LINEFOLLOWER;
   else if (mode == MODE_LINEFOLLOWER)
-    mode = MODE_BLUETOOTH;
+    mode = MODE_MAZE;
+  
   //Serial.println(mode);
 }
 /**
@@ -396,18 +406,29 @@ void avoidObstacles()
  */
 float getDistanceForward()
 {
-  digitalWrite(trigPin, LOW);
+  digitalWrite(trigPinForward, LOW);
   delayMicroseconds(2);
 
-  digitalWrite(trigPin, HIGH);
+  digitalWrite(trigPinForward, HIGH);
   delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
+  digitalWrite(trigPinForward, LOW);
 
   long duration = pulseIn(echoPinForward, HIGH);
   float distance = duration * 0.034 / 2;
 
   return distance;
 }
+/**
+ * @brief Measure the distance using two side ultrasonic sensors and calculate the distance in centimeters.
+ *
+ * This function triggers two ultrasonic sensors, one on the left and one on the right, to send out sound waves and measures
+ * the time it takes for the sound waves to bounce back. Based on the measured durations, it calculates the distance to an
+ * object on each side in centimeters using the speed of sound.
+ *
+ * @note Make sure to set the `trigPinSide`, `echoPinLeft`, and `echoPinRight` appropriately before calling this function.
+ *
+ * @return The distance to an object on each side in centimeters. The return value is the average of the left and right distances.
+ */
 
 float getDistanceSide()
 {
@@ -430,7 +451,7 @@ float getDistanceSide()
   long durationRight = pulseIn(echoPinRight, HIGH);
   
   // Calculate the average duration of both side sensors
-  long averageDuration = (durationLeft + durationRight) / 2;
+  float averageDuration = (durationLeft + durationRight) / 2.0;
 
   float distance = averageDuration * 0.034 / 2;
 
@@ -438,31 +459,21 @@ float getDistanceSide()
 }
 
 
-void updatePosition(int newRow, int newCol)
-{
-  int currentRow, currentCol;
-
-  // Find the current position in the maze
-  for (int row = 0; row < mazeHeight; row++)
-  {
-    for (int col = 0; col < mazeWidth; col++)
-    {
-      if (maze[row][col] == 'S')
-      {
-        currentRow = row;
-        currentCol = col;
-        break;
-      }
-    }
-  }
-
-  // Clear the previous position
-  maze[currentRow][currentCol] = ' ';
-
-  // Update the current position
-  maze[newRow][newCol] = 'S';
-}
-
+/**
+ * @brief Follows the maze and navigates through it using obstacle detection.
+ *
+ * This function is responsible for navigating the maze using obstacle detection through ultrasonic sensors.
+ * It calculates the distances in front and on the sides of the robot using `getDistanceForward()` and `getDistanceSide()` functions,
+ * and based on these distances, it determines the appropriate action to take.
+ * 
+ * If the robot is close to the goal ('G'), it stops the motors and finishes maze navigation.
+ * If there are obstacles in front or on the sides (within 20 centimeters), it stops the motors, turns the robot to the right, and resumes the maze exploration.
+ * If there are no obstacles in front or on the sides, it continues navigating the maze based on the robot's current position in the maze.
+ *
+ * @note Make sure to define the maze layout using the 'maze' array and initialize the necessary pins for ultrasonic sensors before calling this function.
+ * 
+ * @return void
+ */
 void followMaze()
 {
   int currentRow, currentCol;
@@ -474,64 +485,54 @@ void followMaze()
     return;
   }
 
-  if (maze[currentRow][currentCol + 1] == ' ' || maze[currentRow][currentCol + 1] == 'G')
-  {
-    moveForward();
-    delay(1000);
-    updatePosition(currentRow, currentCol + 1);
-  }
-  else if (maze[currentRow + 1][currentCol] == ' ' || maze[currentRow + 1][currentCol] == 'G')
-  {
-    turnRight();
-    delay(1000);
-    moveForward();
-    delay(1000);
-    updatePosition(currentRow + 1, currentCol);
-  }
-  else if (maze[currentRow][currentCol - 1] == ' ' || maze[currentRow][currentCol - 1] == 'G')
-  {
-    turnRight();
-    delay(1000);
-    turnRight();
-    delay(1000);
-    moveForward();
-    delay(1000);
-    updatePosition(currentRow, currentCol - 1);
-  }
-  else if (maze[currentRow - 1][currentCol] == ' ' || maze[currentRow - 1][currentCol] == 'G')
-  {
-    turnLeft();
-    delay(1000);
-    moveForward();
-    delay(1000);
-    updatePosition(currentRow - 1, currentCol);
-  }
-}
+  float distanceForward = getDistanceForward();
+  float distanceSide = getDistanceSide();
 
-
-void getCurrentPosition(int &row, int &col)
-{
-  // Read the values from the left and right IR sensors
-  int leftReading = 0;
-  int rightReading = 0;
-
-  // Determine the current position based on the sensor readings
-  if (leftReading < 500 && rightReading > 500)
+  if (distanceForward < 20 || distanceSide < 20)
   {
-    // We are on the left side of the line
-    col = 0;
-  }
-  else if (leftReading > 500 && rightReading < 500)
-  {
-    // We are on the right side of the line
-    col = 1;
+    stopMotors();
+    delay(100);
+    turnRight();
+    delay(100);
   }
   else
   {
-    // We are on the center of the line
-    col = 2;
+    if (maze[currentRow][currentCol + 1] == ' ' || maze[currentRow][currentCol + 1] == 'G')
+    {
+      moveForward();
+      delay(1000);
+      updatePosition(currentRow, currentCol + 1);
+    }
+    else if (maze[currentRow + 1][currentCol] == ' ' || maze[currentRow + 1][currentCol] == 'G')
+    {
+      turnRight();
+      delay(1000);
+      moveForward();
+      delay(1000);
+      updatePosition(currentRow + 1, currentCol);
+    }
+    else if (maze[currentRow][currentCol - 1] == ' ' || maze[currentRow][currentCol - 1] == 'G')
+    {
+      turnRight();
+      delay(1000);
+      turnRight();
+      delay(1000);
+      moveForward();
+      delay(1000);
+      updatePosition(currentRow, currentCol - 1);
+    }
+    else if (maze[currentRow - 1][currentCol] == ' ' || maze[currentRow - 1][currentCol] == 'G')
+    {
+      turnLeft();
+      delay(1000);
+      moveForward();
+      delay(1000);
+      updatePosition(currentRow - 1, currentCol);
+    }
   }
 }
+
+
 
 /**
  * @brief Line follower function that controls the movement of a robot based on sensor readings.
