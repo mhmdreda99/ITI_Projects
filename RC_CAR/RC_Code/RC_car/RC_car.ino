@@ -278,11 +278,11 @@ void handleBluetoothCommand(char Copy_command)
 void moveForward() {
   lcd.setCursor(0, 0);
   lcd.print("Dir: Forward    ");
-  digitalWrite(in1, HIGH);
-  digitalWrite(in2, LOW);
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, HIGH);
 
-  digitalWrite(in3, HIGH);
-  digitalWrite(in4, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
 }
 /**
  * @brief Move the robot backward and display the "Backward" direction on an LCD screen.
@@ -298,11 +298,10 @@ void moveForward() {
 void moveBackward() {
   lcd.setCursor(0, 0);
   lcd.print("Dir: Backword   ");
-  digitalWrite(in1, LOW);
-  digitalWrite(in2, HIGH);
-
-  digitalWrite(in3, LOW);
-  digitalWrite(in4, HIGH);
+   digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
 }
 /**
  * @brief Turn the robot left and display the "Left" direction on an LCD screen.
@@ -477,7 +476,7 @@ float getDistanceSide()
 void followMaze()
 {
   int currentRow, currentCol;
-  getCurrentPosition(currentRow, currentCol);
+ 
 
   if (maze[currentRow][currentCol] == 'G')
   {
@@ -571,4 +570,29 @@ void LineFollowerFunc()
     //if Right Sensor and Left Sensor are at Black color then it will call Stop function
     stopMotors();
   }
+}
+
+void updatePosition(int newRow, int newCol)
+{
+  int currentRow, currentCol;
+
+  // Find the current position in the maze
+  for (int row = 0; row < mazeHeight; row++)
+  {
+    for (int col = 0; col < mazeWidth; col++)
+    {
+      if (maze[row][col] == 'S')
+      {
+        currentRow = row;
+        currentCol = col;
+        break;
+      }
+    }
+  }
+
+  // Clear the previous position
+  maze[currentRow][currentCol] = ' ';
+
+  // Update the current position
+  maze[newRow][newCol] = 'S';
 }
