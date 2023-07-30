@@ -130,7 +130,7 @@ return_status_t stack_top(stack_t *mystack, u32 *value)
 {
     return_status_t ret = RET_NOK;
     // just want to copy the value of the top without moving it
-     if ((NULL==mystack) || (NULL==value) || (STACK_EMPTY==stack_empty(mystack)){
+     if ((NULL==mystack) || (NULL==value) || (STACK_EMPTY==stack_empty(mystack))){
         #ifdef STACK_DEBUG
         printf("FAILED get the TOP value from STACK");
         #endif // STACK_DEBUG
@@ -158,7 +158,7 @@ return_status_t stack_top(stack_t *mystack, u32 *value)
 return_status_t stack_size(stack_t *mystack, u32 *stack_size)
 {
     return_status_t ret = RET_NOK;
-    if ((NULL==mystack) ){
+    if  (NULL==mystack) {
 
         ret = RET_NOK; 
     }
@@ -177,16 +177,17 @@ return_status_t stack_size(stack_t *mystack, u32 *stack_size)
  * @param mystack pointer to the stack 
  * @return return_status_t reurn stack status 
  */
-return_status_t stack_size(stack_t *mystack)
+return_status_t stack_display(stack_t *mystack)
 {
     return_status_t ret = RET_NOK;
     u32 stack_local_counter = 0 ;
-    if ((NULL==mystack) || (STACK_EMPTY==stack_empty(mystack)){
+    if ((NULL==mystack) || (STACK_EMPTY==stack_empty(mystack))){
        
        ret = RET_NOK
 
     }
     else{
+        
         for (stack_local_counter= mystack->stackptr; stack_local_counter>STACK_MAX_SIZE ; stack_local_counter--)
         {
             printf("STACK ITEMS are : %d \n ", mystack->data[stack_local_counter]);
